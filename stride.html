@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stride">
+<meta name="theme-color" content="#0f0f1a">
+<title>Stride</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0f0f1a; --surface:#1a1a2e; --surface2:#16213e;
+    --border:#2a2a4a; --accent:#7c3aed; --accent2:#06b6d4;
+    --gold:#f59e0b; --green:#10b981; --red:#ef4444; --orange:#f97316;
+    --text:#e2e8f0; --muted:#64748b; --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text)}
+  #app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;position:relative;overflow:hidden}
+
+  /* HEADER */
+  .header{padding:16px 20px 12px;background:linear-gradient(180deg,rgba(124,58,237,.15) 0%,transparent 100%);border-bottom:1px solid var(--border);flex-shrink:0}
+  .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .app-title{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;background:linear-gradient(135deg,#a78bfa,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px}
+  .streak-badge{display:flex;align-items:center;gap:6px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--gold)}
+  .xp-section{display:flex;align-items:center;gap:10px}
+  .level-badge{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;flex-shrink:0;box-shadow:0 0 16px rgba(124,58,237,.5)}
+  .xp-bar-wrap{flex:1}
+  .xp-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px}
+  .xp-track{height:7px;background:var(--border);border-radius:10px;overflow:hidden}
+  .xp-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:10px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+  .pet-btn{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;transition:transform .2s}
+  .pet-btn:active{transform:scale(.9)}
+
+  /* TABS */
+  .tabs{display:flex;padding:0 16px;gap:2px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+  .tab{flex:1;padding:10px 2px;text-align:center;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+  .tab.active{color:var(--accent2);border-bottom-color:var(--accent2);font-weight:600}
+
+  /* SCROLL */
+  .scroll-area{flex:1;overflow-y:auto;padding:16px 20px;scroll-behavior:smooth}
+  .scroll-area::-webkit-scrollbar{display:none}
+
+  /* SECTION HEADERS */
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:4px}
+  .section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+  .section-count{font-size:11px;color:var(--muted);background:var(--surface);padding:2px 8px;border-radius:10px}
+
+  /* TASK CARDS */
+  .task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+  .task-card:active{transform:scale(.98)}
+  .task-card.cal-border{border-left:3px solid var(--accent2)}
+  .task-card.has-prompt{border-left:3px solid #a78bfa}
+  .task-card.persistent-border{border-left:3px solid var(--orange)}
+  .task-card.completed{opacity:.5}
+  .task-card.completed .task-title{text-decoration:line-through}
+  .task-card.missed-card{background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.2)}
+  .task-card.rolled-card{background:rgba(249,115,22,.08);border-color:rgba(249,115,22,.3)}
+  .task-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,58,237,.04),transparent);pointer-events:none}
+  .check-ring{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .3s;margin-top:1px}
+  .check-ring.done{background:var(--green);border-color:var(--green)}
+  .check-ring.missed-ring{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.1)}
+  .check-ring svg{width:13px;height:13px;stroke:white;fill:none;stroke-width:2.5;opacity:0;transition:opacity .2s}
+  .check-ring.done svg{opacity:1}
+  .task-body{flex:1;min-width:0}
+  .task-title{font-size:15px;font-weight:500;line-height:1.3;margin-bottom:4px}
+  .task-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .task-time{font-size:12px;color:var(--accent2);font-weight:500}
+  .task-tag{font-size:11px;padding:2px 8px;border-radius:8px;font-weight:500}
+  .tag-calendar{background:rgba(6,182,212,.15);color:var(--accent2)}
+  .tag-job{background:rgba(124,58,237,.15);color:#a78bfa}
+  .tag-ptr{background:rgba(16,185,129,.15);color:var(--green)}
+  .tag-personal{background:rgba(245,158,11,.15);color:var(--gold)}
+  .tag-training{background:rgba(239,68,68,.15);color:var(--red)}
+  .prompt-chip{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3)}
+  .rolled-chip{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;background:rgba(249,115,22,.15);color:var(--orange);border:1px solid rgba(249,115,22,.3)}
+  .task-xp{font-size:11px;color:var(--gold);font-weight:600;margin-left:auto;flex-shrink:0;padding:2px 8px;background:rgba(245,158,11,.1);border-radius:8px}
+
+  /* HISTORY DAY BLOCK */
+  .history-day{margin-bottom:20px}
+  .history-day-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .history-day-label{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+  .history-day-score{font-size:12px;color:var(--muted)}
+  .history-score-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+  .dot-great{background:var(--green)}
+  .dot-ok{background:var(--gold)}
+  .dot-low{background:var(--red)}
+
+  /* ADD BAR */
+  .add-bar{padding:12px 20px;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:10px;align-items:flex-end}
+  .add-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:none;max-height:100px;line-height:1.4}
+  .add-input:focus{border-color:var(--accent)}
+  .add-input::placeholder{color:var(--muted)}
+  .ai-send-btn{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .2s,opacity .2s}
+  .ai-send-btn:active{transform:scale(.92)}
+  .ai-send-btn svg{width:18px;height:18px;fill:white}
+  .ai-send-btn.loading{opacity:.6;pointer-events:none}
+
+  /* MODALS */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+  .modal-overlay.open{opacity:1;pointer-events:all}
+  .modal-sheet{background:var(--surface);border-radius:24px 24px 0 0;padding:24px 24px 40px;width:100%;max-width:430px;transform:translateY(100%);transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+  .modal-overlay.open .modal-sheet{transform:translateY(0)}
+  .modal-handle{width:40px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 20px}
+
+  /* PET */
+  .pet-display{text-align:center;padding:10px 0 20px}
+  .pet-emoji-big{font-size:72px;display:block;margin-bottom:12px;animation:float 3s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .pet-name{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:4px}
+  .pet-status-text{color:var(--muted);font-size:14px;margin-bottom:16px}
+  .pet-happiness{display:flex;gap:4px;justify-content:center;margin-bottom:20px}
+  .pet-stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .pet-stat{background:var(--surface2);border-radius:12px;padding:12px;text-align:center}
+  .pet-stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--accent2)}
+  .pet-stat-label{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* PROMPT SHEET */
+  .prompt-sheet-title{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;margin-bottom:4px}
+  .prompt-sheet-sub{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .prompt-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;line-height:1.6;color:var(--text);margin-bottom:16px;max-height:200px;overflow-y:auto;user-select:all}
+  .prompt-box::-webkit-scrollbar{display:none}
+  .copy-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:white;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .2s;margin-bottom:10px}
+  .copy-btn:active{opacity:.8}
+  .copy-btn.copied{background:var(--green)}
+  .dismiss-btn{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer}
+
+  /* BADGES */
+  .badges-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .badge-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 10px;text-align:center}
+  .badge-card.earned{border-color:var(--gold);background:rgba(245,158,11,.08)}
+  .badge-icon{font-size:28px;display:block;margin-bottom:6px}
+  .badge-name{font-size:11px;font-weight:600}
+  .badge-desc{font-size:10px;color:var(--muted);margin-top:2px}
+  .badge-card:not(.earned){opacity:.4;filter:grayscale(1)}
+
+  /* STATS */
+  .stats-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+  .stats-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+  .stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+  .stat-row:last-child{border-bottom:none}
+  .stat-row-label{font-size:13px;color:var(--muted)}
+  .stat-row-val{font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
+
+  /* AI BUBBLE */
+  .ai-bubble{background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.5;color:#c4b5fd;display:none}
+  .ai-bubble.visible{display:block}
+  .ai-bubble-header{font-size:11px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+
+  .loading-state{text-align:center;padding:60px 20px;color:var(--muted)}
+  .loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+  .empty-state span{font-size:36px;display:block;margin-bottom:10px}
+
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:12px 20px;font-size:14px;font-weight:500;z-index:200;transition:transform .4s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;max-width:90vw;text-align:center}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.xp{border-color:var(--gold);color:var(--gold)}
+  .toast.level{border-color:var(--accent);color:#a78bfa}
+  .toast.success{border-color:var(--green);color:var(--green)}
+
+  @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  .spinning{animation:spin 1s linear infinite}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="app-title">Stride ⚡</div>
+      <div class="streak-badge">🔥 <span id="streak-num">0</span> day streak</div>
+    </div>
+    <div class="xp-section">
+      <div class="level-badge" id="level-display">1</div>
+      <div class="xp-bar-wrap">
+        <div class="xp-label"><span id="xp-label-text">Level 1</span><span id="xp-fraction">0 / 100 XP</span></div>
+        <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+      </div>
+      <button class="pet-btn" id="pet-btn" onclick="openPetModal()">🦊</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('today')">Today</div>
+    <div class="tab" onclick="switchTab('upcoming')">Upcoming</div>
+    <div class="tab" onclick="switchTab('history')">History</div>
+    <div class="tab" onclick="switchTab('badges')">Badges</div>
+    <div class="tab" onclick="switchTab('stats')">Stats</div>
+  </div>
+
+  <div class="scroll-area" id="main-scroll">
+    <div id="ai-bubble" class="ai-bubble">
+      <div class="ai-bubble-header">✦ Stride Guide</div>
+      <div id="ai-bubble-text"></div>
+    </div>
+    <div id="tab-content"><div class="loading-state"><div class="loading-spinner"></div>Loading your strides...</div></div>
+  </div>
+
+  <div class="add-bar">
+    <textarea class="add-input" id="task-input" placeholder="Add a task or ask me anything..." rows="1"
+      oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+    <button class="ai-send-btn" id="send-btn" onclick="processInput()">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- PET MODAL -->
+<div class="modal-overlay" id="pet-modal" onclick="closePetModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="pet-display">
+      <span class="pet-emoji-big" id="pet-emoji">🦊</span>
+      <div class="pet-name">Nova</div>
+      <div class="pet-status-text" id="pet-status">Your spirit companion</div>
+      <div class="pet-happiness" id="pet-hearts"></div>
+    </div>
+    <div class="pet-stats-grid">
+      <div class="pet-stat"><div class="pet-stat-val" id="pet-stat-tasks">0</div><div class="pet-stat-label">Done</div></div>
+      <div class="pet-stat"><div class="pet-stat-val" id="pet-stat-streak">0</div><div class="pet-stat-label">Streak</div></div>
+      <div class="pet-stat"><div class="pet-stat-val" id="pet-stat-level">1</div><div class="pet-stat-label">Level</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROMPT SHEET -->
+<div class="modal-overlay" id="prompt-modal" onclick="closePromptModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="prompt-sheet-title">Quest complete! +<span id="prompt-xp">0</span> XP 🎉</div>
+    <div class="prompt-sheet-sub">Your ready-to-use Claude prompt. Tap to copy, then paste into a new chat.</div>
+    <div class="prompt-box" id="prompt-text"></div>
+    <button class="copy-btn" id="copy-btn" onclick="copyPrompt()">📋 Copy Prompt</button>
+    <button class="dismiss-btn" onclick="dismissPrompt()">Dismiss</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'stride_v1';
+const DB_URL      = './tasks.json';
+
+// Progressive XP thresholds per level
+const LEVEL_XP = [0,100,150,200,275,375,500,650,800,800,800,800,800,800,800,800,800,800,800,800];
+function xpForLevel(l){ return LEVEL_XP[Math.min(l, LEVEL_XP.length-1)]; }
+function levelFromXP(xp){
+  let l=1, cumulative=0;
+  while(l<LEVEL_XP.length && xp>=cumulative+LEVEL_XP[l]){
+    cumulative+=LEVEL_XP[l]; l++;
+  }
+  return l;
+}
+function xpInCurrentLevel(xp){
+  let cumulative=0;
+  for(let l=1;l<levelFromXP(xp);l++) cumulative+=LEVEL_XP[l];
+  return xp-cumulative;
+}
+
+function getToday(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function getYesterday(){
+  const d=new Date(); d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmt(str){
+  return new Date(str+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let state={
+  xp:0, level:1, streak:0, lastCompleteDate:null,
+  totalCompleted:0, badges:[], activeTab:'today',
+  petHappiness:3,
+  completed:{},      // { taskId: true }
+  userTasks:[],      // tasks added via AI input
+  rolledOver:{}      // { taskId: dateRolledFrom } — persistent tasks rolled to today
+};
+let dbTasks=[];
+
+function loadLocalState(){
+  try{ const s=localStorage.getItem(STORAGE_KEY); if(s) Object.assign(state,JSON.parse(s)); }catch(e){}
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); }
+
+// ─── DATABASE ─────────────────────────────────────────────────────────────────
+async function loadDatabase(){
+  try{
+    const res=await fetch(DB_URL+'?cb='+Date.now());
+    const text=await res.text();
+    const clean=text.replace(/\/\/[^\n]*/g,'').replace(/,(\s*[}\]])/g,'$1');
+    dbTasks=JSON.parse(clean).tasks.map(t=>({
+      ...t, time:t.time||null, prompt:t.prompt||null,
+      persistent: t.persistent !== false // default true if not set
+    }));
+  }catch(e){
+    dbTasks=[];
+    showToast('Place tasks.json in the same folder','');
+  }
+  rollOverPersistentTasks();
+  renderAll();
+}
+
+// Roll persistent incomplete tasks from past days into today
+function rollOverPersistentTasks(){
+  const TODAY=getToday();
+  const allT=[...dbTasks,...(state.userTasks||[])];
+  allT.forEach(t=>{
+    if(t.persistent && t.date<TODAY && !state.completed[t.id] && !state.rolledOver[t.id]){
+      state.rolledOver[t.id]=t.date; // mark original date
+    }
+  });
+  saveState();
+}
+
+function allTasks(){
+  const db=dbTasks.map(t=>({...t,completed:!!state.completed[t.id]}));
+  const user=(state.userTasks||[]).map(t=>({...t,completed:!!state.completed[t.id]}));
+  return [...db,...user];
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderAll(){ updateHeader(); renderContent(); updatePet(); }
+
+function updateHeader(){
+  const l=levelFromXP(state.xp);
+  state.level=l;
+  const xpIn=xpInCurrentLevel(state.xp);
+  const needed=xpForLevel(l);
+  const pct=needed>0?Math.min(100,(xpIn/needed)*100):100;
+  document.getElementById('level-display').textContent=l;
+  document.getElementById('xp-fill').style.width=pct+'%';
+  document.getElementById('xp-label-text').textContent='Level '+l;
+  document.getElementById('xp-fraction').textContent=`${xpIn} / ${needed} XP`;
+  document.getElementById('streak-num').textContent=state.streak;
+  const pets=['🦊','🐺','🦁','🐲','⚡','🌟','💎','👑'];
+  const pe=pets[Math.min(l-1,pets.length-1)];
+  document.getElementById('pet-btn').textContent=pe;
+  document.getElementById('pet-emoji').textContent=pe;
+}
+
+function renderContent(){
+  const el=document.getElementById('tab-content'),t=state.activeTab;
+  el.innerHTML=t==='today'?renderToday():t==='upcoming'?renderUpcoming():t==='history'?renderHistory():t==='badges'?renderBadges():renderStats();
+}
+
+function switchTab(tab){
+  state.activeTab=tab;
+  document.querySelectorAll('.tab').forEach((el,i)=>
+    el.classList.toggle('active',['today','upcoming','history','badges','stats'][i]===tab));
+  renderContent();
+}
+
+// ─── TASK CARD ────────────────────────────────────────────────────────────────
+const TLABEL={calendar:'📅 Cal',job:'💼 Job',ptr:'🏳️‍🌈 PTR',personal:'⭐ Personal',training:'🏃 Training'};
+
+function card(t, opts={}){
+  const{isMissed=false, isRolled=false}=opts;
+  let borderClass='';
+  if(t.prompt) borderClass='has-prompt';
+  else if(isRolled) borderClass='persistent-border';
+  else if(t.source==='calendar') borderClass='cal-border';
+
+  const cardClass=`task-card ${borderClass} ${t.completed?'completed':''} ${isMissed?'missed-card':''} ${isRolled&&!t.completed?'rolled-card':''}`;
+  const ringClass=`check-ring ${t.completed?'done':''} ${isMissed?'missed-ring':''}`;
+  const clickable=!isMissed;
+
+  return `<div class="${cardClass}" ${clickable?`onclick="toggle('${t.id}')"`:''}>
+    <div class="${ringClass}"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="task-body">
+      <div class="task-title">${t.title}</div>
+      <div class="task-meta">
+        ${t.time?`<span class="task-time">⏰ ${t.time}</span>`:''}
+        <span class="task-tag tag-${t.tag||'personal'}">${TLABEL[t.tag]||t.tag}</span>
+        ${t.prompt?`<span class="prompt-chip">✦ Prompt</span>`:''}
+        ${isRolled&&!t.completed?`<span class="rolled-chip">↩ Rolled over</span>`:''}
+      </div>
+    </div>
+    <span class="task-xp">${t.completed?'✓':'+'+t.xp+' XP'}</span>
+  </div>`;
+}
+
+// ─── TODAY TAB ────────────────────────────────────────────────────────────────
+function renderToday(){
+  const TODAY=getToday();
+  const all=allTasks();
+
+  // Rolled-over persistent tasks (from past days, not yet done)
+  const rolledIds=Object.keys(state.rolledOver||{});
+  const rolled=all.filter(t=>rolledIds.includes(t.id)&&!t.completed&&t.date!==TODAY);
+
+  // Today's tasks
+  const todayTasks=all.filter(t=>t.date===TODAY);
+  const open=todayTasks.filter(t=>!t.completed);
+  const done=todayTasks.filter(t=>t.completed);
+
+  let html='';
+
+  if(rolled.length){
+    html+=`<div class="section-header"><span class="section-title">Still Needs to Be Done</span><span class="section-count">${rolled.length}</span></div>`;
+    html+=rolled.map(t=>card(t,{isRolled:true})).join('');
+  }
+
+  if(open.length){
+    html+=`<div class="section-header" style="margin-top:${rolled.length?'16px':'4px'}"><span class="section-title">Today</span><span class="section-count">${open.length}</span></div>`;
+    html+=open.map(t=>card(t)).join('');
+  }
+
+  if(done.length){
+    html+=`<div class="section-header" style="margin-top:16px"><span class="section-title">Completed</span><span class="section-count">${done.length}</span></div>`;
+    html+=done.map(t=>card(t)).join('');
+  }
+
+  if(!rolled.length&&!open.length&&!done.length){
+    html=`<div class="empty-state"><span>🗺️</span>No tasks today.<br>Add one below or ask Stride Guide.</div>`;
+  }
+
+  return html;
+}
+
+// ─── UPCOMING TAB ─────────────────────────────────────────────────────────────
+function renderUpcoming(){
+  const TODAY=getToday();
+  const ts=allTasks().filter(t=>t.date>TODAY).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!ts.length) return `<div class="empty-state"><span>📅</span>No upcoming tasks.</div>`;
+  let html='',last='';
+  for(const t of ts){
+    if(t.date!==last){
+      const d=new Date(t.date+'T12:00:00');
+      html+=`<div class="section-header" style="margin-top:${last?'16px':'4px'}"><span class="section-title">${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span></div>`;
+      last=t.date;
+    }
+    html+=card(t);
+  }
+  return html;
+}
+
+// ─── HISTORY TAB ──────────────────────────────────────────────────────────────
+function renderHistory(){
+  const TODAY=getToday();
+  const all=allTasks();
+
+  // Collect all unique past dates that have tasks
+  const pastDates=[...new Set(
+    all.filter(t=>t.date<TODAY).map(t=>t.date)
+  )].sort((a,b)=>b.localeCompare(a)); // newest first
+
+  if(!pastDates.length) return `<div class="empty-state"><span>📖</span>No history yet.<br>Start completing tasks to build your log.</div>`;
+
+  // Cap at 30 days of history
+  const dates=pastDates.slice(0,30);
+
+  let html='';
+  for(const date of dates){
+    const dayTasks=all.filter(t=>t.date===date);
+    // For persistent tasks that rolled over, they show as "missed" in history
+    // (they weren't completed on that day)
+    const doneTasks=dayTasks.filter(t=>t.completed);
+    const missedTasks=dayTasks.filter(t=>!t.completed&&!t.persistent);
+    const rolledTasks=dayTasks.filter(t=>!t.completed&&t.persistent);
+
+    const total=dayTasks.length;
+    const doneCount=doneTasks.length;
+    const pct=total>0?Math.round((doneCount/total)*100):0;
+
+    let dotClass='dot-low', scoreText='';
+    if(pct>=80){ dotClass='dot-great'; scoreText=`${doneCount}/${total} done`; }
+    else if(pct>=50){ dotClass='dot-ok'; scoreText=`${doneCount}/${total} done`; }
+    else{ dotClass='dot-low'; scoreText=`${doneCount}/${total} done`; }
+
+    html+=`<div class="history-day">
+      <div class="history-day-header">
+        <span class="history-day-label">${fmt(date)}</span>
+        <span class="history-day-score"><span class="history-score-dot ${dotClass}"></span>${scoreText}</span>
+      </div>`;
+
+    if(doneTasks.length){
+      html+=doneTasks.map(t=>card(t)).join('');
+    }
+    if(missedTasks.length){
+      html+=`<div style="font-size:11px;color:var(--red);font-weight:600;margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.5px">Missed</div>`;
+      html+=missedTasks.map(t=>card(t,{isMissed:true})).join('');
+    }
+    if(rolledTasks.length){
+      html+=`<div style="font-size:11px;color:var(--orange);font-weight:600;margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.5px">Rolled Forward</div>`;
+      html+=rolledTasks.map(t=>card(t,{isMissed:true})).join('');
+    }
+
+    html+=`</div>`;
+  }
+  return html;
+}
+
+// ─── BADGES ───────────────────────────────────────────────────────────────────
+const BADGES=[
+  {id:'first', icon:'⚔️', name:'First Stride',  desc:'Complete 1 task',       req:s=>s.totalCompleted>=1},
+  {id:'five',  icon:'🎯', name:'On a Roll',      desc:'5 tasks done',          req:s=>s.totalCompleted>=5},
+  {id:'twenty',icon:'🏆', name:'Unstoppable',    desc:'25 tasks done',         req:s=>s.totalCompleted>=25},
+  {id:'str3',  icon:'🔥', name:'Hot Streak',     desc:'3-day streak',          req:s=>s.streak>=3},
+  {id:'str7',  icon:'⚡', name:'Lightning',      desc:'7-day streak',          req:s=>s.streak>=7},
+  {id:'lv5',   icon:'🌟', name:'Rising Star',    desc:'Reach level 5',         req:s=>s.level>=5},
+  {id:'job3',  icon:'💼', name:'Job Hunter',     desc:'3 job tasks done',      req:_=>allTasks().filter(t=>t.tag==='job'&&t.completed).length>=3},
+  {id:'ptr3',  icon:'🏳️‍🌈',name:'PTR Power',     desc:'3 PTR tasks done',      req:_=>allTasks().filter(t=>t.tag==='ptr'&&t.completed).length>=3},
+  {id:'tri10', icon:'🏁', name:'Tri Warrior',    desc:'10 workouts complete',  req:_=>allTasks().filter(t=>t.tag==='training'&&t.completed).length>=10},
+  {id:'search5',icon:'🔍',name:'On the Hunt',    desc:'5 job searches done',   req:_=>allTasks().filter(t=>t.id.startsWith('job_search')&&t.completed).length>=5},
+  {id:'clean', icon:'✨', name:'Clean Slate',    desc:'No rolled-over tasks',  req:s=>Object.keys(s.rolledOver||{}).filter(id=>!s.completed[id]).length===0&&s.totalCompleted>0},
+];
+
+function renderBadges(){
+  const earned=BADGES.filter(b=>b.req(state)),locked=BADGES.filter(b=>!b.req(state));
+  const bc=(b,e)=>`<div class="badge-card ${e?'earned':''}"><span class="badge-icon">${b.icon}</span><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`;
+  return `<div class="section-header"><span class="section-title">Earned (${earned.length})</span></div>`
+    +(earned.length?`<div class="badges-grid">${earned.map(b=>bc(b,true)).join('')}</div>`:`<div class="empty-state"><span>🔒</span>Complete tasks to earn badges.</div>`)
+    +`<div class="section-header" style="margin-top:16px"><span class="section-title">Locked</span></div>`
+    +`<div class="badges-grid">${locked.map(b=>bc(b,false)).join('')}</div>`;
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function renderStats(){
+  const ts=allTasks(),TODAY=getToday(),td=ts.filter(t=>t.date===TODAY);
+  const trainTotal=ts.filter(t=>t.tag==='training').length;
+  const trainDone=ts.filter(t=>t.tag==='training'&&t.completed).length;
+  const ptrDone=ts.filter(t=>t.tag==='ptr'&&t.completed).length;
+  const jobDone=ts.filter(t=>t.tag==='job'&&t.completed).length;
+  const searches=ts.filter(t=>t.id.startsWith('job_search')&&t.completed).length;
+  const rolled=Object.keys(state.rolledOver||{}).filter(id=>!state.completed[id]).length;
+  const l=state.level;
+  const xpIn=xpInCurrentLevel(state.xp);
+  const needed=xpForLevel(l);
+
+  return `
+  <div class="stats-card"><div class="stats-title">Level Progress</div>
+    <div class="stat-row"><span class="stat-row-label">Total XP</span><span class="stat-row-val" style="color:var(--gold)">${state.xp}</span></div>
+    <div class="stat-row"><span class="stat-row-label">Level</span><span class="stat-row-val" style="color:var(--accent2)">${l}</span></div>
+    <div class="stat-row"><span class="stat-row-label">XP to next level</span><span class="stat-row-val">${needed-xpIn}</span></div>
+    <div class="stat-row"><span class="stat-row-label">Day Streak</span><span class="stat-row-val" style="color:var(--gold)">${state.streak} 🔥</span></div>
+    <div class="stat-row"><span class="stat-row-label">Total Completed</span><span class="stat-row-val">${state.totalCompleted}</span></div>
+  </div>
+  <div class="stats-card"><div class="stats-title">Today — ${fmt(TODAY)}</div>
+    <div class="stat-row"><span class="stat-row-label">Completed</span><span class="stat-row-val">${td.filter(t=>t.completed).length} / ${td.length}</span></div>
+    <div class="stat-row"><span class="stat-row-label">Still needs doing</span><span class="stat-row-val" style="color:${rolled>0?'var(--orange)':'var(--green)'}">${rolled}</span></div>
+  </div>
+  <div class="stats-card"><div class="stats-title">By Category</div>
+    <div class="stat-row"><span class="stat-row-label">💼 Job Searches</span><span class="stat-row-val">${searches}</span></div>
+    <div class="stat-row"><span class="stat-row-label">💼 Job Tasks</span><span class="stat-row-val">${jobDone}</span></div>
+    <div class="stat-row"><span class="stat-row-label">🏳️‍🌈 PTR</span><span class="stat-row-val">${ptrDone}</span></div>
+    <div class="stat-row"><span class="stat-row-label">🏃 Training</span><span class="stat-row-val">${trainDone} / ${trainTotal}</span></div>
+  </div>
+  <div class="stats-card"><div class="stats-title">XP Scale (per level)</div>
+    <div class="stat-row"><span class="stat-row-label">Levels 1-2</span><span class="stat-row-val" style="font-size:13px">100 / 150 XP</span></div>
+    <div class="stat-row"><span class="stat-row-label">Levels 3-4</span><span class="stat-row-val" style="font-size:13px">200 / 275 XP</span></div>
+    <div class="stat-row"><span class="stat-row-label">Levels 5-6</span><span class="stat-row-val" style="font-size:13px">375 / 500 XP</span></div>
+    <div class="stat-row"><span class="stat-row-label">Level 7+</span><span class="stat-row-val" style="font-size:13px">650 / 800 XP cap</span></div>
+  </div>
+  <div class="stats-card"><div class="stats-title">Database</div>
+    <div class="stat-row"><span class="stat-row-label">Tasks from tasks.json</span><span class="stat-row-val">${dbTasks.length}</span></div>
+    <div class="stat-row"><span class="stat-row-label">User-added tasks</span><span class="stat-row-val">${(state.userTasks||[]).length}</span></div>
+    <div class="stat-row" style="cursor:pointer" onclick="reloadDB()"><span class="stat-row-label">🔄 Reload tasks.json</span><span class="stat-row-val" style="color:var(--accent2);font-size:13px">Tap</span></div>
+  </div>`;
+}
+
+// ─── TASK INTERACTION ─────────────────────────────────────────────────────────
+function toggle(id){
+  const task=allTasks().find(t=>t.id===id);
+  if(!task) return;
+  const nowDone=!task.completed;
+  state.completed[id]=nowDone;
+
+  if(nowDone){
+    const prevLevel=levelFromXP(state.xp);
+    state.xp+=task.xp;
+    const newLevel=levelFromXP(state.xp);
+    state.level=newLevel;
+    state.totalCompleted++;
+
+    const TODAY=getToday(),YESTERDAY=getYesterday();
+    if(state.lastCompleteDate!==TODAY){
+      state.streak=state.lastCompleteDate===YESTERDAY?state.streak+1:1;
+      state.lastCompleteDate=TODAY;
+    }
+
+    if(newLevel>prevLevel){
+      setTimeout(()=>showToast(`⬆️ Level Up! You're now Level ${newLevel}!`,'level'),600);
+      state.petHappiness=Math.min(5,(state.petHappiness||3)+1);
+    }
+
+    // Clear from rolled-over if it was there
+    if(state.rolledOver&&state.rolledOver[id]) delete state.rolledOver[id];
+
+    checkBadges();
+    updatePet();
+
+    if(task.prompt){
+      setTimeout(()=>openPromptModal(task),300);
+    } else {
+      showToast(`+${task.xp} XP! ⚡`,'xp');
+    }
+  }
+  saveState(); renderContent(); updateHeader();
+}
+
+function checkBadges(){
+  const prev=new Set(state.badges);
+  BADGES.forEach(b=>{ if(!prev.has(b.id)&&b.req(state)){ state.badges.push(b.id); setTimeout(()=>showToast(`🏅 Badge: ${b.name}!`),1200); }});
+}
+
+async function reloadDB(){
+  document.getElementById('tab-content').innerHTML='<div class="loading-state"><div class="loading-spinner"></div>Reloading...</div>';
+  await loadDatabase();
+  showToast('Tasks reloaded ✦');
+}
+
+// ─── PROMPT MODAL ─────────────────────────────────────────────────────────────
+let currentPrompt='';
+function openPromptModal(task){
+  currentPrompt=task.prompt;
+  document.getElementById('prompt-xp').textContent=task.xp;
+  document.getElementById('prompt-text').textContent=task.prompt;
+  const btn=document.getElementById('copy-btn');
+  btn.textContent='📋 Copy Prompt'; btn.className='copy-btn';
+  document.getElementById('prompt-modal').classList.add('open');
+}
+function closePromptModal(e){ if(e.target===document.getElementById('prompt-modal')) document.getElementById('prompt-modal').classList.remove('open'); }
+function dismissPrompt(){ document.getElementById('prompt-modal').classList.remove('open'); showToast('Task complete ⚡','xp'); }
+async function copyPrompt(){
+  try{ await navigator.clipboard.writeText(currentPrompt); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=currentPrompt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+  const btn=document.getElementById('copy-btn');
+  btn.textContent='✓ Copied!'; btn.className='copy-btn copied';
+  showToast('Copied — paste into a new Claude chat','success');
+  setTimeout(()=>{ btn.textContent='📋 Copy Prompt'; btn.className='copy-btn'; },2000);
+}
+
+// ─── PET ──────────────────────────────────────────────────────────────────────
+function updatePet(){
+  const h=state.petHappiness||3;
+  const he=document.getElementById('pet-hearts');
+  if(he) he.innerHTML=Array.from({length:5},(_,i)=>`<span>${i<h?'❤️':'🤍'}</span>`).join('');
+  const s=document.getElementById('pet-status');
+  if(s) s.textContent=['Resting...','Content 😊','Happy! 😄','Thriving! ✨','RADIANT! 🌟','LEGENDARY! 👑'][Math.min(h,5)];
+  document.getElementById('pet-stat-tasks').textContent=state.totalCompleted;
+  document.getElementById('pet-stat-streak').textContent=state.streak;
+  document.getElementById('pet-stat-level').textContent=state.level;
+}
+function openPetModal(){ updatePet(); document.getElementById('pet-modal').classList.add('open'); }
+function closePetModal(e){ if(e.target===document.getElementById('pet-modal')) document.getElementById('pet-modal').classList.remove('open'); }
+
+// ─── AI INPUT ─────────────────────────────────────────────────────────────────
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); processInput(); } }
+
+async function processInput(){
+  const input=document.getElementById('task-input'),text=input.value.trim();
+  if(!text) return;
+  input.value=''; input.style.height='auto';
+  const btn=document.getElementById('send-btn');
+  btn.classList.add('loading');
+  btn.innerHTML=`<svg viewBox="0 0 24 24" class="spinning" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
+
+  const TODAY=getToday();
+  const recent=allTasks().slice(-8).map(t=>`- ${t.title} (${t.date}, ${t.tag}, ${t.completed?'done':'pending'})`).join('\n');
+  const sys=`You are Stride Guide inside Stride, a gamified task app for Patti, Chicago senior ops professional pivoting to nonprofit. She manages job search (COO/MD/VP Ops nonprofit roles), Proud to Run Chicago (June 28 race), Impact Stride consulting, and a 70.3 triathlon June 14 2026.
+Return ONLY JSON, no markdown.
+ADD task: {"action":"add","title":"...","date":"YYYY-MM-DD","tag":"job|ptr|personal|training","xp":12,"persistent":true}
+- persistent=true for to-do tasks that must get done; persistent=false for appointments/workouts
+CHAT: {"action":"chat","message":"1-2 sentences"}
+Today=${TODAY}. XP 5-20 typical range. Recent tasks:\n${recent}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:sys,messages:[{role:'user',content:text}]})});
+    const data=await res.json();
+    const parsed=JSON.parse((data.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+    if(parsed.action==='add'){
+      const t={id:'u_'+Date.now(),title:parsed.title,date:parsed.date||TODAY,tag:parsed.tag||'personal',
+        xp:parsed.xp||12,source:'user',time:null,prompt:null,persistent:parsed.persistent!==false};
+      if(!state.userTasks) state.userTasks=[];
+      state.userTasks.push(t); saveState();
+      switchTab(t.date===TODAY?'today':'upcoming');
+      showBubble(`Added: "${t.title}" for ${fmt(t.date)}. +${t.xp} XP!`);
+      showToast('Task added ⚡');
+    } else { showBubble(parsed.message||'Got it!'); }
+  }catch(e){
+    if(!state.userTasks) state.userTasks=[];
+    state.userTasks.push({id:'u_'+Date.now(),title:text,date:TODAY,tag:'personal',xp:12,source:'user',time:null,prompt:null,persistent:true});
+    saveState(); switchTab('today'); showToast('Task added!');
+  }
+  btn.classList.remove('loading');
+  btn.innerHTML=`<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
+}
+
+function showBubble(msg){ const b=document.getElementById('ai-bubble'); document.getElementById('ai-bubble-text').textContent=msg; b.classList.add('visible'); document.getElementById('main-scroll').scrollTop=0; setTimeout(()=>b.classList.remove('visible'),6000); }
+
+let toastTimer;
+function showToast(msg,type=''){
+  const t=document.getElementById('toast'); clearTimeout(toastTimer);
+  t.textContent=msg; t.className=`toast ${type} show`;
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadLocalState();
+loadDatabase();
+</script>
+</body>
+</html>
