@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stride">
+<meta name="theme-color" content="#0f0f1a">
+<title>Stride</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0f1a;--surface:#1a1a2e;--surface2:#16213e;
+  --border:#2a2a4a;--accent:#7c3aed;--accent2:#06b6d4;
+  --gold:#f59e0b;--green:#10b981;--red:#ef4444;--orange:#f97316;
+  --text:#e2e8f0;--muted:#64748b;--r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);font-size:15px}
+
+/* FIX #2 — dvh accounts for mobile browser URL bar */
+#app{display:flex;flex-direction:column;height:100dvh;max-width:430px;margin:0 auto;overflow:hidden}
+
+/* HEADER */
+.hdr{padding:14px 18px 10px;background:linear-gradient(180deg,rgba(124,58,237,.12),transparent);border-bottom:1px solid var(--border);flex-shrink:0}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;background:linear-gradient(135deg,#a78bfa,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.streak{display:flex;align-items:center;gap:5px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--gold)}
+.xp-row{display:flex;align-items:center;gap:10px}
+.lvl{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;flex-shrink:0;box-shadow:0 0 14px rgba(124,58,237,.4)}
+.xp-wrap{flex:1}
+.xp-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px}
+.xp-track{height:6px;background:var(--border);border-radius:10px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:10px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.pet-btn{width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+
+/* TABS */
+.tabs{display:flex;padding:0 10px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;background:var(--bg)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:9px 10px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent2);font-weight:600}
+
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;padding:14px 18px;overscroll-behavior:contain}
+.scroll::-webkit-scrollbar{display:none}
+
+/* SECTION */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:2px}
+.st{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.sc{font-size:10px;color:var(--muted);background:var(--surface);padding:2px 7px;border-radius:8px}
+
+/* TASK CARD */
+.tc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;position:relative;transition:opacity .2s}
+.tc.cal-border{border-left:3px solid var(--accent2)}
+.tc.prompt-border{border-left:3px solid #a78bfa}
+.tc.persist-border{border-left:3px solid var(--orange)}
+.tc.done-card .ttl{text-decoration:line-through;opacity:.5}
+.tc.missed-card{background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.2)}
+.tc.rolled-card{background:rgba(249,115,22,.06);border-color:rgba(249,115,22,.25)}
+.tc.skipped-card{background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.2)}
+
+/* card main row */
+.ti{padding:13px 13px 13px 14px;display:flex;align-items:flex-start;gap:11px;cursor:pointer}
+.cr{width:23px;height:23px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .25s;margin-top:1px}
+.cr.done{background:var(--green);border-color:var(--green)}
+.cr.skipped-ring{border-color:var(--muted);background:rgba(100,116,139,.15)}
+.cr svg{width:12px;height:12px;stroke:white;fill:none;stroke-width:2.5;opacity:0;transition:opacity .2s}
+.cr.done svg{opacity:1}
+.tb{flex:1;min-width:0}
+.ttl{font-size:14px;font-weight:500;line-height:1.3;margin-bottom:4px}
+.tm{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.ttime{font-size:11px;color:var(--accent2);font-weight:500}
+.tag{font-size:10px;padding:2px 7px;border-radius:7px;font-weight:500}
+.tag-calendar{background:rgba(6,182,212,.12);color:var(--accent2)}
+.tag-job{background:rgba(124,58,237,.12);color:#a78bfa}
+.tag-ptr{background:rgba(16,185,129,.12);color:var(--green)}
+.tag-personal{background:rgba(245,158,11,.12);color:var(--gold)}
+.tag-training{background:rgba(239,68,68,.12);color:var(--red)}
+.tag-health{background:rgba(236,72,153,.12);color:#f472b6}
+.tag-finance{background:rgba(99,102,241,.12);color:#818cf8}
+.chip{font-size:10px;padding:2px 6px;border-radius:7px;font-weight:600}
+.chip-prompt{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25)}
+.chip-rolled{background:rgba(249,115,22,.12);color:var(--orange);border:1px solid rgba(249,115,22,.25)}
+.chip-skipped{background:rgba(100,116,139,.12);color:var(--muted);border:1px solid rgba(100,116,139,.2)}
+.txp{font-size:10px;color:var(--gold);font-weight:600;flex-shrink:0;padding:2px 7px;background:rgba(245,158,11,.08);border-radius:7px;margin-left:auto}
+
+/* card action row — FIX #4 */
+.ta{display:flex;gap:6px;padding:0 13px 11px 50px;flex-wrap:wrap}
+.ta-btn{font-size:11px;padding:4px 10px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:opacity .15s}
+.ta-btn:active{opacity:.7}
+.btn-skip{background:rgba(100,116,139,.15);color:var(--muted)}
+.btn-reschedule{background:rgba(6,182,212,.12);color:var(--accent2)}
+.btn-delete{background:rgba(239,68,68,.12);color:var(--red)}
+
+/* HISTORY */
+.hday{margin-bottom:18px}
+.hday-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.hday-lbl{font-family:'Syne',sans-serif;font-weight:700;font-size:12px}
+.hday-score{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot-g{background:var(--green)}.dot-y{background:var(--gold)}.dot-r{background:var(--red)}
+.hist-sub{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:6px 0 4px}
+.hist-missed{color:var(--red)}.hist-rolled{color:var(--orange)}.hist-skipped{color:var(--muted)}
+
+/* ADD BAR — FIX #6 */
+.add-bar{padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0}
+
+/* category picker — shown before input */
+.cat-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:2px}
+.cat-row::-webkit-scrollbar{display:none}
+.cat-pill{flex-shrink:0;padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--border);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s}
+.cat-pill.active{background:var(--accent);border-color:var(--accent);color:white}
+.cat-pill:active{opacity:.7}
+
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.ainput{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:9px 13px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:none;max-height:90px;line-height:1.4;display:none}
+.ainput.visible{display:block}
+.ainput:focus{border-color:var(--accent)}
+.ainput::placeholder{color:var(--muted)}
+.send-btn{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .2s;display:none}
+.send-btn.visible{display:flex}
+.send-btn svg{width:17px;height:17px;fill:white}
+.send-btn.loading{opacity:.5;pointer-events:none}
+
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.open{opacity:1;pointer-events:all}
+.sheet{background:var(--surface);border-radius:22px 22px 0 0;padding:22px 22px 36px;width:100%;max-width:430px;transform:translateY(100%);transition:transform .35s cubic-bezier(.34,1.2,.64,1)}
+.overlay.open .sheet{transform:translateY(0)}
+.handle{width:38px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 18px}
+.sheet-title{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;margin-bottom:4px}
+.sheet-sub{font-size:13px;color:var(--muted);margin-bottom:14px}
+
+/* PET */
+.pet-center{text-align:center;padding:8px 0 18px}
+.pet-big{font-size:68px;display:block;margin-bottom:10px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.pet-nm{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:3px}
+.pet-st{color:var(--muted);font-size:13px;margin-bottom:14px}
+.pet-hearts{display:flex;gap:3px;justify-content:center;margin-bottom:18px;font-size:19px}
+.pet-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.ps{background:var(--surface2);border-radius:11px;padding:11px;text-align:center}
+.ps-v{font-family:'Syne',sans-serif;font-weight:800;font-size:19px;color:var(--accent2)}
+.ps-l{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* PROMPT SHEET */
+.prompt-box{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:13px;font-size:12px;line-height:1.6;margin-bottom:14px;max-height:180px;overflow-y:auto}
+.prompt-box::-webkit-scrollbar{display:none}
+.full-btn{width:100%;padding:13px;border:none;border-radius:11px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-bottom:8px;transition:opacity .15s}
+.full-btn:active{opacity:.8}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-copied{background:var(--green);color:white}
+
+/* SKIP SHEET */
+.skip-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:none;height:90px;margin-bottom:14px}
+.skip-textarea:focus{border-color:var(--accent)}
+.skip-textarea::placeholder{color:var(--muted)}
+
+/* RESCHEDULE SHEET */
+.date-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:12px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;-webkit-appearance:none}
+.date-input:focus{border-color:var(--accent)}
+
+/* BADGES */
+.badges-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.badge{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px 8px;text-align:center}
+.badge.earned{border-color:var(--gold);background:rgba(245,158,11,.07)}
+.badge:not(.earned){opacity:.4;filter:grayscale(1)}
+.bi{font-size:26px;display:block;margin-bottom:5px}
+.bn{font-size:10px;font-weight:600}
+.bd{font-size:9px;color:var(--muted);margin-top:2px}
+
+/* STATS */
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:15px;margin-bottom:11px}
+.scard-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:11px}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.srow:last-child{border-bottom:none}
+.srl{font-size:12px;color:var(--muted)}
+.srv{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+
+/* AI BUBBLE */
+.ai-bubble{background:rgba(124,58,237,.09);border:1px solid rgba(124,58,237,.28);border-radius:var(--r);padding:11px 13px;margin-bottom:11px;font-size:12px;line-height:1.5;color:#c4b5fd;display:none}
+.ai-bubble.on{display:block}
+.ai-hdr{font-size:10px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+
+.loading-state{text-align:center;padding:55px 20px;color:var(--muted)}
+.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+.empty{text-align:center;padding:36px 18px;color:var(--muted);font-size:13px}
+.empty span{font-size:34px;display:block;margin-bottom:9px}
+
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-70px);background:var(--surface);border:1px solid var(--accent);border-radius:11px;padding:10px 18px;font-size:13px;font-weight:500;z-index:300;transition:transform .35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;max-width:88vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.xp{border-color:var(--gold);color:var(--gold)}
+.toast.lvl{border-color:var(--accent);color:#a78bfa}
+.toast.ok{border-color:var(--green);color:var(--green)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinning{animation:spin 1s linear infinite}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-top">
+      <div class="logo">Stride ⚡</div>
+      <div class="streak">🔥 <span id="streak-num">0</span> day streak</div>
+    </div>
+    <div class="xp-row">
+      <div class="lvl" id="lvl-display">1</div>
+      <div class="xp-wrap">
+        <div class="xp-lbl"><span id="xp-lbl">Level 1</span><span id="xp-frac">0 / 100 XP</span></div>
+        <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+      </div>
+      <button class="pet-btn" id="pet-btn" onclick="openPet()">🦊</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('today')">Today</div>
+    <div class="tab" onclick="switchTab('upcoming')">Upcoming</div>
+    <div class="tab" onclick="switchTab('history')">History</div>
+    <div class="tab" onclick="switchTab('badges')">Badges</div>
+    <div class="tab" onclick="switchTab('stats')">Stats</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="scroll" id="scroll">
+    <div id="ai-bubble" class="ai-bubble"><div class="ai-hdr">✦ Stride Guide</div><div id="ai-text"></div></div>
+    <div id="content"><div class="loading-state"><div class="spinner"></div>Loading your strides...</div></div>
+  </div>
+
+  <!-- ADD BAR — FIX #6 -->
+  <div class="add-bar">
+    <div class="cat-row" id="cat-row">
+      <div class="cat-pill active" onclick="selectCat('task','➕ Task')">➕ Task</div>
+      <div class="cat-pill" onclick="selectCat('event','📅 Event')">📅 Event</div>
+      <div class="cat-pill" onclick="selectCat('training','🏃 Workout')">🏃 Workout</div>
+      <div class="cat-pill" onclick="selectCat('job','💼 Job')">💼 Job</div>
+      <div class="cat-pill" onclick="selectCat('ptr','🏳️‍🌈 PTR')">🏳️‍🌈 PTR</div>
+      <div class="cat-pill" onclick="selectCat('health','💊 Health')">💊 Health</div>
+      <div class="cat-pill" onclick="selectCat('finance','💰 Finance')">💰 Finance</div>
+      <div class="cat-pill" onclick="selectCat('ai','💬 Ask AI')">💬 Ask AI</div>
+    </div>
+    <div class="input-row">
+      <textarea class="ainput" id="ainput" placeholder="Type here..." rows="1"
+        oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="processInput()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PET MODAL -->
+<div class="overlay" id="pet-overlay" onclick="closeOverlay('pet-overlay',event)">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="pet-center">
+      <span class="pet-big" id="pet-emoji">🦊</span>
+      <div class="pet-nm">Nova</div>
+      <div class="pet-st" id="pet-status">Your spirit companion</div>
+      <div class="pet-hearts" id="pet-hearts"></div>
+    </div>
+    <div class="pet-grid">
+      <div class="ps"><div class="ps-v" id="ps-tasks">0</div><div class="ps-l">Done</div></div>
+      <div class="ps"><div class="ps-v" id="ps-streak">0</div><div class="ps-l">Streak</div></div>
+      <div class="ps"><div class="ps-v" id="ps-level">1</div><div class="ps-l">Level</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROMPT MODAL -->
+<div class="overlay" id="prompt-overlay" onclick="closeOverlay('prompt-overlay',event)">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Complete! +<span id="prompt-xp">0</span> XP ⚡</div>
+    <div class="sheet-sub">Your ready-to-use Claude prompt. Copy and paste into a new chat.</div>
+    <div class="prompt-box" id="prompt-text"></div>
+    <button class="full-btn btn-primary" id="copy-btn" onclick="copyPrompt()">📋 Copy Prompt</button>
+    <button class="full-btn btn-secondary" onclick="closeSheet('prompt-overlay')">Dismiss</button>
+  </div>
+</div>
+
+<!-- SKIP MODAL -->
+<div class="overlay" id="skip-overlay" onclick="closeOverlay('skip-overlay',event)">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Skip this task?</div>
+    <div class="sheet-sub">Add a quick note about why (optional).</div>
+    <textarea class="skip-textarea" id="skip-note" placeholder="e.g. Rescheduled, ran out of time, no longer relevant..."></textarea>
+    <button class="full-btn btn-primary" onclick="confirmSkip()">Skip Task</button>
+    <button class="full-btn btn-secondary" onclick="closeSheet('skip-overlay')">Cancel</button>
+  </div>
+</div>
+
+<!-- RESCHEDULE MODAL -->
+<div class="overlay" id="reschedule-overlay" onclick="closeOverlay('reschedule-overlay',event)">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sheet-title">Reschedule</div>
+    <div class="sheet-sub">Pick a new date for this task.</div>
+    <input type="date" class="date-input" id="reschedule-date">
+    <button class="full-btn btn-primary" onclick="confirmReschedule()">Move Task</button>
+    <button class="full-btn btn-secondary" onclick="closeSheet('reschedule-overlay')">Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'stride_v2';
+const DB_URL      = './tasks.json';
+
+// Progressive XP thresholds
+const LVL_XP = [0,100,150,200,275,375,500,650,800,800,800,800,800,800,800,800];
+function xpNeededForLevel(l){ return LVL_XP[Math.min(l, LVL_XP.length-1)]; }
+function calcLevel(xp){
+  let l=1,cum=0;
+  while(l<LVL_XP.length && xp>=cum+LVL_XP[l]){ cum+=LVL_XP[l]; l++; }
+  return l;
+}
+function xpInLevel(xp){
+  let cum=0;
+  for(let l=1;l<calcLevel(xp);l++) cum+=LVL_XP[l];
+  return xp-cum;
+}
+
+function todayStr(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function yesterdayStr(){
+  const d=new Date(); d.setDate(d.getDate()-1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDate(str){
+  return new Date(str+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let S={
+  xp:0, level:1, streak:0, lastCompleteDate:null,
+  totalCompleted:0, badges:[], activeTab:'today',
+  petHappiness:3,
+  completed:{},    // id -> true
+  skipped:{},      // id -> {note, date}
+  rescheduled:{},  // id -> newDate
+  rolledOver:{},   // id -> originalDate
+  userTasks:[]
+};
+let dbTasks=[];
+let pendingSkipId=null;
+let pendingRescheduleId=null;
+let currentPromptText='';
+let selectedCat='task';
+
+function loadState(){
+  try{ const s=localStorage.getItem(STORAGE_KEY); if(s) Object.assign(S,JSON.parse(s)); }catch(e){}
+}
+function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(S)); }
+
+// ─── DATABASE ─────────────────────────────────────────────────────────────────
+async function loadDB(){
+  try{
+    const r=await fetch(DB_URL+'?cb='+Date.now());
+    const txt=await r.text();
+    const clean=txt.replace(/\/\/[^\n]*/g,'').replace(/,(\s*[}\]])/g,'$1');
+    dbTasks=JSON.parse(clean).tasks.map(t=>({...t,time:t.time||null,prompt:t.prompt||null,persistent:t.persistent!==false}));
+  }catch(e){
+    dbTasks=[];
+    toast('Place tasks.json in the same folder','');
+  }
+  rollPersistent();
+  renderAll();
+}
+
+function rollPersistent(){
+  const TODAY=todayStr();
+  allTasks().forEach(t=>{
+    if(t.persistent && t.date<TODAY && !S.completed[t.id] && !S.skipped[t.id] && !S.rolledOver[t.id]){
+      S.rolledOver[t.id]=t.date;
+    }
+  });
+  save();
+}
+
+function allTasks(){
+  // FIX #7 — calendar events sort first within each day
+  const db=dbTasks.map(t=>({...t,completed:!!S.completed[t.id]}));
+  const user=(S.userTasks||[]).map(t=>({...t,completed:!!S.completed[t.id]}));
+  return [...db,...user].sort((a,b)=>{
+    if(a.date!==b.date) return 0; // date sort handled elsewhere
+    const aIsCal=a.source==='calendar'?0:1;
+    const bIsCal=b.source==='calendar'?0:1;
+    if(aIsCal!==bIsCal) return aIsCal-bIsCal;
+    const at=a.time||'99:99', bt=b.time||'99:99';
+    return at.localeCompare(bt);
+  });
+}
+
+function getTask(id){ return allTasks().find(t=>t.id===id); }
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderAll(){ updateHeader(); renderContent(); updatePet(); }
+
+function updateHeader(){
+  const l=calcLevel(S.xp);
+  S.level=l;
+  const xpIn=xpInLevel(S.xp);
+  const need=xpNeededForLevel(l);
+  const pct=need>0?Math.min(100,(xpIn/need)*100):100;
+  document.getElementById('lvl-display').textContent=l;
+  document.getElementById('xp-fill').style.width=pct+'%';
+  document.getElementById('xp-lbl').textContent='Level '+l;
+  document.getElementById('xp-frac').textContent=xpIn+' / '+need+' XP';
+  document.getElementById('streak-num').textContent=S.streak;
+  const pets=['🦊','🐺','🦁','🐲','⚡','🌟','💎','👑'];
+  const pe=pets[Math.min(l-1,pets.length-1)];
+  document.getElementById('pet-btn').textContent=pe;
+  document.getElementById('pet-emoji').textContent=pe;
+}
+
+function renderContent(){
+  const el=document.getElementById('content'),t=S.activeTab;
+  el.innerHTML=t==='today'?renderToday():t==='upcoming'?renderUpcoming():t==='history'?renderHistory():t==='badges'?renderBadges():renderStats();
+}
+
+function switchTab(tab){
+  S.activeTab=tab;
+  document.querySelectorAll('.tab').forEach((el,i)=>
+    el.classList.toggle('active',['today','upcoming','history','badges','stats'][i]===tab));
+  renderContent();
+}
+
+// ─── CARD BUILDER ─────────────────────────────────────────────────────────────
+const TLBL={calendar:'📅 Cal',job:'💼 Job',ptr:'🏳️‍🌈 PTR',personal:'⭐ Personal',training:'🏃 Training',health:'💊 Health',finance:'💰 Finance'};
+
+function buildCard(t, opts={}){
+  const{isMissed=false,isRolled=false,isSkipped=false,isHistory=false}=opts;
+  const isCalendar=t.source==='calendar';
+  const isDone=!!S.completed[t.id];
+  const skipData=S.skipped[t.id];
+
+  // border class
+  let border='';
+  if(t.prompt) border='prompt-border';
+  else if(isRolled&&!isDone) border='persist-border';
+  else if(isCalendar) border='cal-border';
+
+  // card state class
+  let state='';
+  if(isDone) state='done-card';
+  else if(isSkipped||skipData) state='skipped-card';
+  else if(isMissed) state='missed-card';
+  else if(isRolled) state='rolled-card';
+
+  // check ring
+  let ring='cr';
+  if(isDone) ring='cr done';
+  else if(isSkipped||skipData) ring='cr skipped-ring';
+
+  // xp label
+  const xpLabel=isDone?'✓':'+'+t.xp+' XP';
+
+  // action buttons — FIX #4
+  // Calendar events: reschedule only (no skip, no delete)
+  // All others: skip, reschedule, delete
+  let actions='';
+  if(!isHistory&&!isDone&&!isSkipped&&!skipData){
+    if(isCalendar){
+      actions=`<div class="ta">
+        <button class="ta-btn btn-reschedule" onclick="openReschedule('${t.id}',event)">📅 Reschedule</button>
+      </div>`;
+    } else {
+      actions=`<div class="ta">
+        <button class="ta-btn btn-skip" onclick="openSkip('${t.id}',event)">⏭ Skip</button>
+        <button class="ta-btn btn-reschedule" onclick="openReschedule('${t.id}',event)">📅 Reschedule</button>
+        <button class="ta-btn btn-delete" onclick="deleteTask('${t.id}',event)">🗑 Delete</button>
+      </div>`;
+    }
+  }
+
+  // chips
+  let chips='';
+  if(t.prompt) chips+=`<span class="chip chip-prompt">✦ Prompt</span>`;
+  if(isRolled&&!isDone) chips+=`<span class="chip chip-rolled">↩ Rolled over</span>`;
+  if(isSkipped||skipData) chips+=`<span class="chip chip-skipped">⏭ Skipped</span>`;
+
+  // click handler — only on main row, not on history missed
+  const clickable=!isMissed&&!isSkipped&&!skipData;
+  const onclick=clickable?`onclick="toggleTask('${t.id}')"`:''
+
+  return `<div class="tc ${border} ${state}" id="card-${t.id}">
+    <div class="ti" ${onclick}>
+      <div class="${ring}"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="tb">
+        <div class="ttl">${t.title}</div>
+        <div class="tm">
+          ${t.time?`<span class="ttime">⏰ ${t.time}</span>`:''}
+          <span class="tag tag-${t.tag||'personal'}">${TLBL[t.tag]||t.tag}</span>
+          ${chips}
+        </div>
+      </div>
+      <span class="txp">${xpLabel}</span>
+    </div>
+    ${actions}
+  </div>`;
+}
+
+// ─── TODAY ────────────────────────────────────────────────────────────────────
+function renderToday(){
+  const TODAY=todayStr();
+  const all=allTasks();
+
+  // Rolled persistent tasks (past date, not done, not skipped)
+  const rolled=all.filter(t=>
+    S.rolledOver[t.id] && !S.completed[t.id] && !S.skipped[t.id] && t.date!==TODAY
+  );
+
+  // Today's tasks — FIX #7: calendar events already sort first via allTasks()
+  const todayAll=all.filter(t=>t.date===TODAY);
+  const todayOpen=todayAll.filter(t=>!S.completed[t.id]&&!S.skipped[t.id]);
+  const todayDone=todayAll.filter(t=>S.completed[t.id]);
+  const todaySkipped=todayAll.filter(t=>S.skipped[t.id]&&!S.completed[t.id]);
+
+  let html='';
+
+  if(rolled.length){
+    html+=`<div class="sh"><span class="st">Still Needs to Be Done</span><span class="sc">${rolled.length}</span></div>`;
+    html+=rolled.map(t=>buildCard(t,{isRolled:true})).join('');
+  }
+
+  if(todayOpen.length){
+    html+=`<div class="sh" style="margin-top:${rolled.length?'14px':'2px'}"><span class="st">Today</span><span class="sc">${todayOpen.length}</span></div>`;
+    html+=todayOpen.map(t=>buildCard(t)).join('');
+  }
+
+  if(todaySkipped.length){
+    html+=`<div class="sh" style="margin-top:14px"><span class="st">Skipped</span><span class="sc">${todaySkipped.length}</span></div>`;
+    html+=todaySkipped.map(t=>buildCard(t,{isSkipped:true})).join('');
+  }
+
+  if(todayDone.length){
+    html+=`<div class="sh" style="margin-top:14px"><span class="st">Completed</span><span class="sc">${todayDone.length}</span></div>`;
+    html+=todayDone.map(t=>buildCard(t)).join('');
+  }
+
+  if(!rolled.length&&!todayOpen.length&&!todayDone.length&&!todaySkipped.length){
+    html=`<div class="empty"><span>🗺️</span>Nothing on the books today.<br>Add a task below.</div>`;
+  }
+
+  return html;
+}
+
+// ─── UPCOMING ─────────────────────────────────────────────────────────────────
+function renderUpcoming(){
+  const TODAY=todayStr();
+  // Include rescheduled tasks at new dates
+  const ts=allTasks().filter(t=>{
+    const date=S.rescheduled[t.id]||t.date;
+    return date>TODAY&&!S.completed[t.id]&&!S.skipped[t.id];
+  }).sort((a,b)=>{
+    const ad=S.rescheduled[a.id]||a.date, bd=S.rescheduled[b.id]||b.date;
+    return ad.localeCompare(bd);
+  });
+  if(!ts.length) return `<div class="empty"><span>📅</span>No upcoming tasks.</div>`;
+  let html='',last='';
+  for(const t of ts){
+    const d=S.rescheduled[t.id]||t.date;
+    if(d!==last){
+      html+=`<div class="sh" style="margin-top:${last?'14px':'2px'}"><span class="st">${fmtDate(d)}</span></div>`;
+      last=d;
+    }
+    html+=buildCard(t);
+  }
+  return html;
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────────────────
+function renderHistory(){
+  const TODAY=todayStr();
+  const all=allTasks();
+  const pastDates=[...new Set(all.filter(t=>t.date<TODAY).map(t=>t.date))].sort((a,b)=>b.localeCompare(a)).slice(0,45);
+  if(!pastDates.length) return `<div class="empty"><span>📖</span>No history yet.<br>Complete tasks to build your log.</div>`;
+
+  let html='';
+  for(const date of pastDates){
+    const day=all.filter(t=>t.date===date);
+    const done=day.filter(t=>S.completed[t.id]);
+    const skipped=day.filter(t=>S.skipped[t.id]&&!S.completed[t.id]);
+    const missed=day.filter(t=>!S.completed[t.id]&&!S.skipped[t.id]&&!t.persistent&&!S.rolledOver[t.id]);
+    const rolledFwd=day.filter(t=>!S.completed[t.id]&&!S.skipped[t.id]&&t.persistent&&S.rolledOver[t.id]);
+
+    const total=day.length;
+    const doneCount=done.length;
+    const pct=total>0?Math.round((doneCount/total)*100):0;
+    const dot=pct>=80?'dot-g':pct>=50?'dot-y':'dot-r';
+
+    html+=`<div class="hday">
+      <div class="hday-hdr">
+        <span class="hday-lbl">${fmtDate(date)}</span>
+        <span class="hday-score"><span class="dot ${dot}"></span>${doneCount}/${total} done</span>
+      </div>`;
+
+    if(done.length) html+=done.map(t=>buildCard(t,{isHistory:true})).join('');
+    if(skipped.length){
+      html+=`<div class="hist-sub hist-skipped">Skipped</div>`;
+      html+=skipped.map(t=>{
+        const note=S.skipped[t.id]?.note;
+        return buildCard(t,{isHistory:true,isSkipped:true})+(note?`<div style="font-size:11px;color:var(--muted);padding:0 14px 8px 50px;margin-top:-4px;font-style:italic">"${note}"</div>`:'');
+      }).join('');
+    }
+    if(missed.length){
+      html+=`<div class="hist-sub hist-missed">Missed</div>`;
+      html+=missed.map(t=>buildCard(t,{isHistory:true,isMissed:true})).join('');
+    }
+    if(rolledFwd.length){
+      html+=`<div class="hist-sub hist-rolled">Rolled Forward</div>`;
+      html+=rolledFwd.map(t=>buildCard(t,{isHistory:true,isMissed:true})).join('');
+    }
+    html+=`</div>`;
+  }
+  return html;
+}
+
+// ─── BADGES ───────────────────────────────────────────────────────────────────
+const BADGE_DEFS=[
+  {id:'b1',  icon:'⚔️', name:'First Stride',  desc:'Complete 1 task',         req:s=>s.totalCompleted>=1},
+  {id:'b5',  icon:'🎯', name:'On a Roll',      desc:'5 tasks done',            req:s=>s.totalCompleted>=5},
+  {id:'b25', icon:'🏆', name:'Unstoppable',    desc:'25 tasks done',           req:s=>s.totalCompleted>=25},
+  {id:'s3',  icon:'🔥', name:'Hot Streak',     desc:'3-day streak',            req:s=>s.streak>=3},
+  {id:'s7',  icon:'⚡', name:'Lightning',      desc:'7-day streak',            req:s=>s.streak>=7},
+  {id:'l5',  icon:'🌟', name:'Rising Star',    desc:'Reach level 5',           req:s=>s.level>=5},
+  {id:'j3',  icon:'💼', name:'Job Hunter',     desc:'3 job tasks done',        req:_=>allTasks().filter(t=>t.tag==='job'&&S.completed[t.id]).length>=3},
+  {id:'p3',  icon:'🏳️‍🌈',name:'PTR Power',     desc:'3 PTR tasks done',        req:_=>allTasks().filter(t=>t.tag==='ptr'&&S.completed[t.id]).length>=3},
+  {id:'t10', icon:'🏁', name:'Tri Warrior',    desc:'10 workouts complete',    req:_=>allTasks().filter(t=>t.tag==='training'&&S.completed[t.id]).length>=10},
+  {id:'q5',  icon:'🔍', name:'On the Hunt',    desc:'5 job searches done',     req:_=>allTasks().filter(t=>t.id.startsWith('job_search')&&S.completed[t.id]).length>=5},
+  {id:'cs',  icon:'✨', name:'Clean Slate',    desc:'Zero rolled-over tasks',  req:s=>Object.keys(s.rolledOver||{}).filter(id=>!s.completed[id]&&!s.skipped[id]).length===0&&s.totalCompleted>0},
+  {id:'ns',  icon:'🧘', name:'Self-Aware',     desc:'Skip 3 tasks with notes', req:s=>Object.values(s.skipped||{}).filter(v=>v&&v.note&&v.note.length>0).length>=3},
+];
+
+function renderBadges(){
+  const earned=BADGE_DEFS.filter(b=>b.req(S)), locked=BADGE_DEFS.filter(b=>!b.req(S));
+  const bc=(b,e)=>`<div class="badge ${e?'earned':''}"><span class="bi">${b.icon}</span><div class="bn">${b.name}</div><div class="bd">${b.desc}</div></div>`;
+  return `<div class="sh"><span class="st">Earned (${earned.length})</span></div>`
+    +(earned.length?`<div class="badges-grid">${earned.map(b=>bc(b,true)).join('')}</div>`:`<div class="empty"><span>🔒</span>Complete tasks to earn badges.</div>`)
+    +`<div class="sh" style="margin-top:14px"><span class="st">Locked</span></div>`
+    +`<div class="badges-grid">${locked.map(b=>bc(b,false)).join('')}</div>`;
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function renderStats(){
+  const TODAY=todayStr();
+  const all=allTasks(), td=all.filter(t=>t.date===TODAY);
+  const l=S.level, xpIn=xpInLevel(S.xp), need=xpNeededForLevel(l);
+  const trainDone=all.filter(t=>t.tag==='training'&&S.completed[t.id]).length;
+  const trainTotal=all.filter(t=>t.tag==='training').length;
+  const rolled=Object.keys(S.rolledOver||{}).filter(id=>!S.completed[id]&&!S.skipped[id]).length;
+  const skippedCount=Object.keys(S.skipped||{}).length;
+
+  return `<div class="scard"><div class="scard-title">Level Progress</div>
+    <div class="srow"><span class="srl">Total XP</span><span class="srv" style="color:var(--gold)">${S.xp}</span></div>
+    <div class="srow"><span class="srl">Level</span><span class="srv" style="color:var(--accent2)">${l}</span></div>
+    <div class="srow"><span class="srl">XP to next level</span><span class="srv">${need-xpIn}</span></div>
+    <div class="srow"><span class="srl">Day Streak</span><span class="srv" style="color:var(--gold)">${S.streak} 🔥</span></div>
+    <div class="srow"><span class="srl">Total Completed</span><span class="srv">${S.totalCompleted}</span></div>
+  </div>
+  <div class="scard"><div class="scard-title">Today — ${fmtDate(TODAY)}</div>
+    <div class="srow"><span class="srl">Completed</span><span class="srv">${td.filter(t=>S.completed[t.id]).length} / ${td.length}</span></div>
+    <div class="srow"><span class="srl">Still needs doing</span><span class="srv" style="color:${rolled>0?'var(--orange)':'var(--green)'}">${rolled}</span></div>
+  </div>
+  <div class="scard"><div class="scard-title">By Category</div>
+    <div class="srow"><span class="srl">💼 Job Search</span><span class="srv">${all.filter(t=>t.id.startsWith('job_search')&&S.completed[t.id]).length}</span></div>
+    <div class="srow"><span class="srl">🏳️‍🌈 PTR</span><span class="srv">${all.filter(t=>t.tag==='ptr'&&S.completed[t.id]).length}</span></div>
+    <div class="srow"><span class="srl">🏃 Training</span><span class="srv">${trainDone} / ${trainTotal}</span></div>
+    <div class="srow"><span class="srl">⏭ Skipped (all time)</span><span class="srv">${skippedCount}</span></div>
+  </div>
+  <div class="scard"><div class="scard-title">XP Scale</div>
+    <div class="srow"><span class="srl">Levels 1–2</span><span class="srv" style="font-size:12px">100 / 150 XP</span></div>
+    <div class="srow"><span class="srl">Levels 3–4</span><span class="srv" style="font-size:12px">200 / 275 XP</span></div>
+    <div class="srow"><span class="srl">Levels 5–6</span><span class="srv" style="font-size:12px">375 / 500 XP</span></div>
+    <div class="srow"><span class="srl">Level 7+</span><span class="srv" style="font-size:12px">650 → 800 cap</span></div>
+  </div>
+  <div class="scard"><div class="scard-title">Database</div>
+    <div class="srow"><span class="srl">Tasks from tasks.json</span><span class="srv">${dbTasks.length}</span></div>
+    <div class="srow"><span class="srl">User-added</span><span class="srv">${(S.userTasks||[]).length}</span></div>
+    <div class="srow" style="cursor:pointer" onclick="reloadDB()"><span class="srl">🔄 Reload tasks.json</span><span class="srv" style="color:var(--accent2);font-size:12px">Tap</span></div>
+  </div>`;
+}
+
+// ─── TASK ACTIONS ─────────────────────────────────────────────────────────────
+
+// FIX #1 — XP is correctly added AND subtracted on toggle
+function toggleTask(id){
+  const task=getTask(id); if(!task) return;
+  const wasDone=!!S.completed[id];
+
+  if(wasDone){
+    // UNDO — subtract XP
+    delete S.completed[id];
+    S.xp=Math.max(0,S.xp-task.xp);
+    S.totalCompleted=Math.max(0,S.totalCompleted-1);
+    S.level=calcLevel(S.xp);
+    toast('Task uncompleted','');
+  } else {
+    // COMPLETE — add XP
+    const prevLevel=calcLevel(S.xp);
+    S.completed[id]=true;
+    S.xp+=task.xp;
+    S.totalCompleted++;
+    S.level=calcLevel(S.xp);
+    const TODAY=todayStr(),YESTERDAY=yesterdayStr();
+    if(S.lastCompleteDate!==TODAY){
+      S.streak=S.lastCompleteDate===YESTERDAY?S.streak+1:1;
+      S.lastCompleteDate=TODAY;
+    }
+    if(S.level>prevLevel){
+      setTimeout(()=>toast('⬆️ Level Up! You are now Level '+S.level+'!','lvl'),500);
+      S.petHappiness=Math.min(5,(S.petHappiness||3)+1);
+    }
+    // Clear rolled status
+    if(S.rolledOver[id]) delete S.rolledOver[id];
+    checkBadges();
+    updatePet();
+    if(task.prompt){
+      setTimeout(()=>openPromptSheet(task),300);
+    } else {
+      toast('+'+task.xp+' XP ⚡','xp');
+    }
+  }
+  save(); renderContent(); updateHeader();
+}
+
+function openSkip(id, e){
+  e&&e.stopPropagation();
+  pendingSkipId=id;
+  document.getElementById('skip-note').value='';
+  openSheet('skip-overlay');
+}
+
+function confirmSkip(){
+  if(!pendingSkipId) return;
+  const note=document.getElementById('skip-note').value.trim();
+  S.skipped[pendingSkipId]={note, date:todayStr()};
+  if(S.rolledOver[pendingSkipId]) delete S.rolledOver[pendingSkipId];
+  pendingSkipId=null;
+  save(); closeSheet('skip-overlay'); renderContent();
+  toast('Task skipped','');
+}
+
+function openReschedule(id, e){
+  e&&e.stopPropagation();
+  pendingRescheduleId=id;
+  // Default to tomorrow
+  const tom=new Date(); tom.setDate(tom.getDate()+1);
+  const ds=tom.getFullYear()+'-'+String(tom.getMonth()+1).padStart(2,'0')+'-'+String(tom.getDate()).padStart(2,'0');
+  document.getElementById('reschedule-date').value=ds;
+  openSheet('reschedule-overlay');
+}
+
+function confirmReschedule(){
+  if(!pendingRescheduleId) return;
+  const newDate=document.getElementById('reschedule-date').value;
+  if(!newDate){ toast('Pick a date',''); return; }
+  S.rescheduled[pendingRescheduleId]=newDate;
+  // If it was rolled, clear that too since user consciously rescheduled
+  if(S.rolledOver[pendingRescheduleId]) delete S.rolledOver[pendingRescheduleId];
+  // Also update actual task date if it's a user task
+  const ut=S.userTasks.find(t=>t.id===pendingRescheduleId);
+  if(ut) ut.date=newDate;
+  pendingRescheduleId=null;
+  save(); closeSheet('reschedule-overlay'); renderContent();
+  toast('Task rescheduled','ok');
+}
+
+function deleteTask(id, e){
+  e&&e.stopPropagation();
+  // Remove from userTasks
+  S.userTasks=(S.userTasks||[]).filter(t=>t.id!==id);
+  // Also clean up state
+  delete S.completed[id]; delete S.skipped[id];
+  delete S.rescheduled[id]; delete S.rolledOver[id];
+  // For DB tasks, mark as skipped with "deleted" note so it disappears
+  if(dbTasks.find(t=>t.id===id)){
+    S.skipped[id]={note:'Deleted',date:todayStr()};
+  }
+  save(); renderContent();
+  toast('Task removed','');
+}
+
+function checkBadges(){
+  const prev=new Set(S.badges);
+  BADGE_DEFS.forEach(b=>{ if(!prev.has(b.id)&&b.req(S)){ S.badges.push(b.id); setTimeout(()=>toast('🏅 Badge: '+b.name+'!'),1100); }});
+}
+
+async function reloadDB(){
+  document.getElementById('content').innerHTML='<div class="loading-state"><div class="spinner"></div>Reloading...</div>';
+  await loadDB(); toast('Tasks reloaded ✦');
+}
+
+// ─── PET ──────────────────────────────────────────────────────────────────────
+function updatePet(){
+  const h=S.petHappiness||3;
+  const he=document.getElementById('pet-hearts');
+  if(he) he.innerHTML=Array.from({length:5},(_,i)=>i<h?'❤️':'🤍').join('');
+  const s=document.getElementById('pet-status');
+  const statuses=['Resting...','Content 😊','Happy! 😄','Thriving! ✨','RADIANT! 🌟','LEGENDARY! 👑'];
+  if(s) s.textContent=statuses[Math.min(h,5)];
+  document.getElementById('ps-tasks').textContent=S.totalCompleted;
+  document.getElementById('ps-streak').textContent=S.streak;
+  document.getElementById('ps-level').textContent=S.level;
+}
+function openPet(){ updatePet(); openSheet('pet-overlay'); }
+
+// ─── PROMPT SHEET ─────────────────────────────────────────────────────────────
+function openPromptSheet(task){
+  currentPromptText=task.prompt;
+  document.getElementById('prompt-xp').textContent=task.xp;
+  document.getElementById('prompt-text').textContent=task.prompt;
+  const btn=document.getElementById('copy-btn');
+  btn.textContent='📋 Copy Prompt'; btn.className='full-btn btn-primary';
+  openSheet('prompt-overlay');
+}
+async function copyPrompt(){
+  try{ await navigator.clipboard.writeText(currentPromptText); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=currentPromptText; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+  const btn=document.getElementById('copy-btn');
+  btn.textContent='✓ Copied!'; btn.className='full-btn btn-copied';
+  toast('Copied — paste into a new Claude chat','ok');
+  setTimeout(()=>{ btn.textContent='📋 Copy Prompt'; btn.className='full-btn btn-primary'; },2000);
+}
+
+// ─── MODAL HELPERS ────────────────────────────────────────────────────────────
+function openSheet(id){ document.getElementById(id).classList.add('open'); }
+function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
+function closeOverlay(id,e){ if(e.target===document.getElementById(id)) closeSheet(id); }
+
+// ─── ADD BAR — FIX #6 ─────────────────────────────────────────────────────────
+function selectCat(cat, label){
+  selectedCat=cat;
+  document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const input=document.getElementById('ainput');
+  const sendBtn=document.getElementById('send-btn');
+
+  if(cat==='ai'){
+    input.placeholder='Ask Stride Guide anything...';
+  } else {
+    const placeholders={
+      task:'Name your task...',
+      event:'Event name (date/time optional)...',
+      training:'Workout description...',
+      job:'Job search task...',
+      ptr:'Proud to Run task...',
+      health:'Health task or appointment...',
+      finance:'Finance task...'
+    };
+    input.placeholder=placeholders[cat]||'Type here...';
+  }
+  input.classList.add('visible');
+  sendBtn.classList.add('visible');
+  input.focus();
+}
+
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,90)+'px'; }
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); processInput(); } }
+
+async function processInput(){
+  const input=document.getElementById('ainput'), text=input.value.trim();
+  if(!text) return;
+  input.value=''; input.style.height='auto';
+
+  const btn=document.getElementById('send-btn');
+  btn.classList.add('loading');
+  btn.innerHTML='<svg viewBox="0 0 24 24" class="spinning" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+
+  const TODAY=todayStr();
+  const isAI=selectedCat==='ai';
+  const recent=allTasks().slice(-6).map(t=>`${t.title}(${t.date},${t.tag},${S.completed[t.id]?'done':'pending'})`).join('; ');
+
+  // Persistent defaults by category
+  const persistByCat={task:true,event:false,training:false,job:true,ptr:true,health:false,finance:true,ai:false};
+  const persistent=persistByCat[selectedCat]!==undefined?persistByCat[selectedCat]:true;
+
+  const sys=`You are Stride Guide in Stride, a gamified task app for Patti, Chicago senior ops professional.
+Return ONLY JSON. No markdown.
+ADD task: {"action":"add","title":"...","date":"YYYY-MM-DD","tag":"${selectedCat==='ai'?'personal':selectedCat}","xp":12,"persistent":${persistent}}
+CHAT: {"action":"chat","message":"1-2 sentences, direct"}
+Today=${TODAY}. Infer date from text. XP 5-20. Recent: ${recent}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:250,system:sys,messages:[{role:'user',content:text}]})
+    });
+    const data=await res.json();
+    const parsed=JSON.parse((data.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+    if(parsed.action==='add'){
+      const t={id:'u_'+Date.now(),title:parsed.title,date:parsed.date||TODAY,
+        tag:parsed.tag||selectedCat||'personal',xp:parsed.xp||12,
+        source:'user',time:null,prompt:null,persistent:parsed.persistent!==false};
+      if(!S.userTasks) S.userTasks=[];
+      S.userTasks.push(t); save();
+      rollPersistent();
+      switchTab(t.date===TODAY?'today':'upcoming');
+      showBubble('Added: "'+t.title+'" for '+fmtDate(t.date)+'. +'+t.xp+' XP!');
+      toast('Task added ⚡');
+    } else {
+      showBubble(parsed.message||'Got it!');
+    }
+  }catch(e){
+    if(!S.userTasks) S.userTasks=[];
+    S.userTasks.push({id:'u_'+Date.now(),title:text,date:TODAY,
+      tag:selectedCat==='ai'?'personal':selectedCat,xp:12,
+      source:'user',time:null,prompt:null,persistent});
+    save(); rollPersistent(); switchTab('today'); toast('Task added!');
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML='<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+}
+
+function showBubble(msg){
+  const b=document.getElementById('ai-bubble');
+  document.getElementById('ai-text').textContent=msg;
+  b.classList.add('on');
+  document.getElementById('scroll').scrollTop=0;
+  setTimeout(()=>b.classList.remove('on'),6000);
+}
+
+let toastTimer;
+function toast(msg,type=''){
+  const t=document.getElementById('toast'); clearTimeout(toastTimer);
+  t.textContent=msg; t.className='toast '+(type?type+' ':'')+'show';
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadState();
+loadDB();
+
+// Select first cat pill on load
+document.querySelector('.cat-pill').classList.add('active');
+</script>
+</body>
+</html>
